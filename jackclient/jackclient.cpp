@@ -155,8 +155,7 @@ JackState JackClient::getState()
 int JackClient::process(jack_nframes_t nframes, void *arg)
 {
     JackClient* cl = static_cast<JackClient*>(arg);
-    cl->onProcess(nframes);
-	return 0;
+    return cl->onProcess(nframes);
 }
 
 void JackClient::jack_shutdown(void * arg){
@@ -218,6 +217,8 @@ void JackClient::deactivate()
 
 JackInputPort* JackClient::createInputPort(const char* name, JackPortType type)
 {
+    if(jackState == JackState::CLOSED)
+        throw JackClientException("cannot create port when client is not opened");
 	switch(type)
 	{
 		case(JackPortType::Audio):
@@ -229,11 +230,13 @@ JackInputPort* JackClient::createInputPort(const char* name, JackPortType type)
 			return new JackMIDIInputPort(this,name);
 		}
 	}
-	return nullptr;
+	throw JackClientException("Hu! This should never happen. JackPortType is unknown");
 }
 JackOutputPort* JackClient::createOutputPort(const char* name, JackPortType type)
 {
-	switch(type)
+    if(jackState == JackState::CLOSED)
+        throw JackClientException("cannot create port when client is not opened");
+    switch(type)
 	{
 		case(JackPortType::Audio):
 		{
@@ -244,7 +247,7 @@ JackOutputPort* JackClient::createOutputPort(const char* name, JackPortType type
 			return new JackMIDIOutputPort(this,name);
 		}
 	}
-	return nullptr;
+	throw JackClientException("Hu! This should never happen. JackPortType is unknown");
 }
 
 void JackClient::startFreewheel()
