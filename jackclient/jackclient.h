@@ -155,6 +155,8 @@ class JackClient{
 		static int xrun_callback(void *arg);
 		jack_port_t* createPort(const char* name, JackPortType type = JackPortType::Audio, bool isInput=true);
 		const char ** listPorts(JackPortType filter, bool onlyPhysical, bool listInputs);
+		std::vector<JackInputPort*> getInputPorts(JackPortType filter, const char ** ports);
+		std::vector<JackOutputPort*> getOutputPorts(JackPortType filter, const char ** ports);
 	protected:
 		virtual int onProcess(uint32_t sampleCount)=0;
 		virtual void onShutdown(){};
@@ -173,7 +175,9 @@ class JackClient{
 		uint32_t getSampleRate();
 		JackInputPort* createInputPort(const char* name, JackPortType type = JackPortType::Audio);
 		JackOutputPort* createOutputPort(const char* name, JackPortType type = JackPortType::Audio);
-		std::vector<JackInputPort*> listInputPorts(JackPortType filter = JackPortType::Audio, bool onlyPhysical = false);
-		std::vector<JackOutputPort*> listOutputPorts(JackPortType filter = JackPortType::Audio, bool onlyPhysical = false);
+		std::vector<JackInputPort*> listInputPorts(JackPortType filter = JackPortType::Audio);
+		std::vector<JackInputPort*> listPhysicalInputPorts(JackPortType filter = JackPortType::Audio);
+		std::vector<JackOutputPort*> listOutputPorts(JackPortType filter = JackPortType::Audio);
+		std::vector<JackOutputPort*> listPhysicalOutputPorts(JackPortType filter = JackPortType::Audio);
 };
 #endif

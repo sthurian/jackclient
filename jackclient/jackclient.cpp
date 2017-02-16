@@ -273,11 +273,22 @@ const char ** JackClient::listPorts(JackPortType filter, bool onlyPhysical, bool
 }
 
 
-std::vector<JackInputPort*> JackClient::listInputPorts(JackPortType filter, bool onlyPhysical)
+std::vector<JackInputPort*> JackClient::listPhysicalInputPorts(JackPortType filter)
 {
-	std::vector<JackInputPort*> list;
-	const char ** portList = this->listPorts(filter, onlyPhysical, true);
-	if(portList)
+	const char ** portList = this->listPorts(filter, true, true);
+	return getInputPorts(filter,portList);
+}
+
+std::vector<JackInputPort*> JackClient::listInputPorts(JackPortType filter)
+{
+	const char ** portList = this->listPorts(filter, false, true);
+	return getInputPorts(filter,portList);
+}
+
+std::vector<JackInputPort*> JackClient::getInputPorts(JackPortType filter,const char ** portList)
+{
+    std::vector<JackInputPort*> list;
+    if(portList)
 	{
 		unsigned int portNum = 0;
 		while(portList[portNum])
@@ -294,12 +305,11 @@ std::vector<JackInputPort*> JackClient::listInputPorts(JackPortType filter, bool
 		jack_free(portList);
 	}
 	return list;
-}
-std::vector<JackOutputPort*> JackClient::listOutputPorts(JackPortType filter, bool onlyPhysical)
+};
+std::vector<JackOutputPort*> JackClient::getOutputPorts(JackPortType filter, const char ** portList)
 {
-	std::vector<JackOutputPort*> list;
-	const char ** portList = this->listPorts(filter, onlyPhysical, false);
-	if(portList)
+    std::vector<JackOutputPort*> list;
+    if(portList)
 	{
 		unsigned int portNum = 0;
 		while(portList[portNum])
@@ -316,6 +326,18 @@ std::vector<JackOutputPort*> JackClient::listOutputPorts(JackPortType filter, bo
 		jack_free(portList);
 	}
 	return list;
+};
+
+std::vector<JackOutputPort*> JackClient::listPhysicalOutputPorts(JackPortType filter)
+{
+	const char ** portList = this->listPorts(filter, true, false);
+	return getOutputPorts(filter,portList);
+}
+
+std::vector<JackOutputPort*> JackClient::listOutputPorts(JackPortType filter)
+{
+	const char ** portList = this->listPorts(filter, false, false);
+	return getOutputPorts(filter,portList);
 }
 
 uint32_t JackClient::getSampleRate()

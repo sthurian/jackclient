@@ -12,12 +12,12 @@ class ExampleClient : public JackClient
             inPort = (JackAudioInputPort*) this->createInputPort("example_input");
             outPort = (JackAudioOutputPort*) this->createOutputPort("example_output");
             activate();
-            for(JackInputPort* in: listInputPorts(JackPortType::Audio,true))
+            for(JackInputPort* in: this->listPhysicalInputPorts(JackPortType::Audio))
             {
                 in->connectTo(outPort);
                 delete in;
             }
-            for(JackOutputPort* out: listOutputPorts(JackPortType::Audio,true))
+            for(JackOutputPort* out: this->listPhysicalOutputPorts(JackPortType::Audio))
             {
                 out->connectTo(inPort);
                 delete out;
@@ -27,7 +27,7 @@ class ExampleClient : public JackClient
         {
             delete inPort;
             delete outPort;
-            close();
+            this->close();
         }
     protected:
         int onProcess(uint32_t sampleCount)
@@ -42,18 +42,15 @@ class ExampleClient : public JackClient
 };
 int main()
 {
-
     try
     {
         ExampleClient client;
         char input;
-
         std::cout << "\nRunning ... press <enter> to quit" << std::endl;
         std::cin.get(input);
     } catch (JackClientException& e)
     {
         std::cerr << e.what() << std::endl;
     }
-
 	return 0;
 }
