@@ -60,7 +60,7 @@ class JackInputPort : public JackPort
 		JackInputPort(JackClient* client, const char* name, JackPortType type);
 		JackInputPort(JackClient* client, jack_port_t* port, JackPortType type);
 	public:
-		void connectTo(JackOutputPort* port);
+        void connectTo(JackOutputPort* port);
 		void disconnect(JackOutputPort* port);
 };
 /**
@@ -75,7 +75,7 @@ class JackOutputPort : public JackPort
 		JackOutputPort(JackClient* client, const char* name, JackPortType type);
 		JackOutputPort(JackClient* client, jack_port_t* port, JackPortType type);
 	public:
-		void connectTo(JackInputPort* port);
+        void connectTo(JackInputPort* port);
 		void disconnect(JackInputPort* port);
 };
 

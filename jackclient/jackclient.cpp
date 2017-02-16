@@ -84,6 +84,8 @@ float* JackAudioOutputPort::getBuffer()
 
 void JackOutputPort::connectTo(JackInputPort* inPort)
 {
+    if(this->getPortType() != inPort->getPortType())
+        throw JackClientException("Cannot connect ports with different types");
 	if(this->client->getState() != JackState::ACTIVE)
 		throw JackClientException("Cannot connect ports when client is not active");
 	int err = jack_connect(this->client_handle, jack_port_name(this->port),jack_port_name(inPort->port));
@@ -97,6 +99,8 @@ void JackOutputPort::disconnect(JackInputPort* inPort)
 }
 void JackInputPort::connectTo(JackOutputPort* outPort)
 {
+    if(this->getPortType() != outPort->getPortType())
+        throw JackClientException("Cannot connect ports with different types");
 	if(this->client->getState() != JackState::ACTIVE)
 		throw JackClientException("Cannot connect ports when client is not active");
 	int err = jack_connect(this->client_handle, jack_port_name(outPort->port), jack_port_name(this->port));
