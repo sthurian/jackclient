@@ -347,6 +347,20 @@ std::vector<JackOutputPort*> JackClient::listOutputPorts(JackPortType filter)
 	return getOutputPorts(filter,portList);
 }
 
+void JackClient::stopTransport(){
+    jack_transport_stop(this->client);
+}
+
+void JackClient::startTransport()
+{
+    jack_transport_start(this->client);
+}
+
+void JackClient::setTransportPosition(uint32_t position)
+{
+    jack_transport_locate(this->client, position);
+}
+
 uint32_t JackClient::getSampleRate()
 {
 	return jack_get_sample_rate(this->client);

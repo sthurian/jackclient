@@ -168,6 +168,9 @@ class JackClient{
 		void open();
 		void close();
 		void activate();
+		void startTransport();
+		void stopTransport();
+		void setTransportPosition(uint32_t position);
 		void deactivate();
 		void startFreewheel();
 		void stopFreewheel();
