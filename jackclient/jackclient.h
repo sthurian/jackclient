@@ -5,8 +5,14 @@
 #include <jack/jack.h>
 #include <jack/midiport.h>
 
-enum class JackPortType {Audio, MIDI};
+enum class JackPortType {AUDIO, MIDI};
 enum class JackState {ACTIVE, INACTIVE,CLOSED};
+namespace Transport
+{
+    enum class JackTransportState {STARTING=JackTransportStarting,ROLLING= JackTransportRolling,STOPPED=JackTransportStopped};
+    using JackPosition = jack_position_t;
+}
+
 class JackClient;
 /**
  *
@@ -153,7 +159,8 @@ class JackClient{
 		static void handleShutdown(void * arg);
 		static int buffer_size_callback(jack_nframes_t nframes, void *arg);
 		static int xrun_callback(void *arg);
-		jack_port_t* createPort(const char* name, JackPortType type = JackPortType::Audio, bool isInput=true);
+		static int sync_callback(jack_transport_state_t state, jack_position_t *pos, void *arg);
+		jack_port_t* createPort(const char* name, JackPortType type = JackPortType::AUDIO, bool isInput=true);
 		const char ** listPorts(JackPortType filter, bool onlyPhysical, bool listInputs);
 		std::vector<JackInputPort*> getInputPorts(JackPortType filter, const char ** ports);
 		std::vector<JackOutputPort*> getOutputPorts(JackPortType filter, const char ** ports);
@@ -161,6 +168,10 @@ class JackClient{
 		virtual int onProcess(uint32_t sampleCount)=0;
 		virtual void onShutdown(){};
 		virtual void onXRun(){};
+		virtual int onTransportStart(Transport::JackPosition* pos){return 1;};
+		virtual int onTransportStop(Transport::JackPosition* pos){return 1;};
+		virtual int onTransportRoll(Transport::JackPosition* pos){return 1;};
+		virtual int onTransportSync(Transport::JackTransportState state, Transport::JackPosition* pos);
 	public:
 		JackState getState();
 		JackClient(const char* name);
@@ -171,16 +182,17 @@ class JackClient{
 		void startTransport();
 		void stopTransport();
 		void setTransportPosition(uint32_t position);
+		Transport::JackTransportState getTransportState();
 		void deactivate();
 		void startFreewheel();
 		void stopFreewheel();
 		void setBufferSize(uint32_t bufSize);
 		uint32_t getSampleRate();
-		JackInputPort* createInputPort(const char* name, JackPortType type = JackPortType::Audio);
-		JackOutputPort* createOutputPort(const char* name, JackPortType type = JackPortType::Audio);
-		std::vector<JackInputPort*> listInputPorts(JackPortType filter = JackPortType::Audio);
-		std::vector<JackInputPort*> listPhysicalInputPorts(JackPortType filter = JackPortType::Audio);
-		std::vector<JackOutputPort*> listOutputPorts(JackPortType filter = JackPortType::Audio);
-		std::vector<JackOutputPort*> listPhysicalOutputPorts(JackPortType filter = JackPortType::Audio);
+		JackInputPort* createInputPort(const char* name, JackPortType type = JackPortType::AUDIO);
+		JackOutputPort* createOutputPort(const char* name, JackPortType type = JackPortType::AUDIO);
+		std::vector<JackInputPort*> listInputPorts(JackPortType filter = JackPortType::AUDIO);
+		std::vector<JackInputPort*> listPhysicalInputPorts(JackPortType filter = JackPortType::AUDIO);
+		std::vector<JackOutputPort*> listOutputPorts(JackPortType filter = JackPortType::AUDIO);
+		std::vector<JackOutputPort*> listPhysicalOutputPorts(JackPortType filter = JackPortType::AUDIO);
 };
 #endif

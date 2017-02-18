@@ -7,8 +7,8 @@ JackPort::JackPort(JackClient* client, jack_port_t* port, JackPortType type):cli
 };
 JackInputPort::JackInputPort(JackClient* client, jack_port_t* port, JackPortType type):JackPort(client,port,type){};
 JackOutputPort::JackOutputPort(JackClient* client, jack_port_t* port, JackPortType type):JackPort(client,port,type){};
-JackAudioInputPort::JackAudioInputPort(JackClient* client, jack_port_t* port):JackInputPort(client,port,JackPortType::Audio){};
-JackAudioOutputPort::JackAudioOutputPort(JackClient* client, jack_port_t* port):JackOutputPort(client,port,JackPortType::Audio){};
+JackAudioInputPort::JackAudioInputPort(JackClient* client, jack_port_t* port):JackInputPort(client,port,JackPortType::AUDIO){};
+JackAudioOutputPort::JackAudioOutputPort(JackClient* client, jack_port_t* port):JackOutputPort(client,port,JackPortType::AUDIO){};
 JackMIDIInputPort::JackMIDIInputPort(JackClient* client, jack_port_t* port):JackInputPort(client,port,JackPortType::MIDI){};
 JackMIDIOutputPort::JackMIDIOutputPort(JackClient* client, jack_port_t* port):JackOutputPort(client,port,JackPortType::MIDI){};
 
@@ -17,19 +17,19 @@ JackPort::JackPort(JackClient* client, const char* name, JackPortType type):clie
 };
 JackPort::~JackPort(){};
 JackInputPort::JackInputPort(JackClient* client, const char* name, JackPortType type):JackPort(client,name,type){
-	if(type == JackPortType::Audio)
+	if(type == JackPortType::AUDIO)
 		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
 	else if(type == JackPortType::MIDI)
 		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 };
 JackOutputPort::JackOutputPort(JackClient* client, const char* name, JackPortType type):JackPort(client,name,type){
-	if(type == JackPortType::Audio)
+	if(type == JackPortType::AUDIO)
 		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 	else if(type == JackPortType::MIDI)
 		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
 };
-JackAudioInputPort::JackAudioInputPort(JackClient* client, const char* name):JackInputPort(client,name,JackPortType::Audio){};
-JackAudioOutputPort::JackAudioOutputPort(JackClient* client, const char* name):JackOutputPort(client,name,JackPortType::Audio){};
+JackAudioInputPort::JackAudioInputPort(JackClient* client, const char* name):JackInputPort(client,name,JackPortType::AUDIO){};
+JackAudioOutputPort::JackAudioOutputPort(JackClient* client, const char* name):JackOutputPort(client,name,JackPortType::AUDIO){};
 JackMIDIInputPort::JackMIDIInputPort(JackClient* client, const char* name):JackInputPort(client,name,JackPortType::MIDI){};
 JackMIDIOutputPort::JackMIDIOutputPort(JackClient* client, const char* name):JackOutputPort(client,name,JackPortType::MIDI){};
 JackMIDIEvent::JackMIDIEvent(uint32_t time, size_t size, unsigned char* buffer):time(time),size(size),buffer(buffer){};
@@ -179,6 +179,11 @@ int JackClient::xrun_callback (void *arg)
     return 0;
 }
 
+int JackClient::sync_callback(jack_transport_state_t state, jack_position_t *pos, void *arg)
+{
+    return static_cast<JackClient*>(arg)->onTransportSync(static_cast<Transport::JackTransportState>(state),static_cast<Transport::JackPosition*>(pos));
+}
+
 void JackClient::open()
 {
 	this->client = jack_client_open (this->name, JackNoStartServer, &this->status, NULL);
@@ -194,6 +199,7 @@ void JackClient::open()
   jack_on_shutdown (this->client, &JackClient::jack_shutdown, this);
   jack_set_buffer_size_callback	(this->client,&JackClient::buffer_size_callback,this);
   jack_set_xrun_callback (this->client, &JackClient::xrun_callback, this);
+  jack_set_sync_callback(this->client, &JackClient::sync_callback,this);
   jackState = JackState::INACTIVE;
 };
 void JackClient::close()
@@ -225,7 +231,7 @@ JackInputPort* JackClient::createInputPort(const char* name, JackPortType type)
         throw JackClientException("cannot create port when client is not opened");
 	switch(type)
 	{
-		case(JackPortType::Audio):
+		case(JackPortType::AUDIO):
 		{
 			return new JackAudioInputPort(this,name);
 		}
@@ -242,7 +248,7 @@ JackOutputPort* JackClient::createOutputPort(const char* name, JackPortType type
         throw JackClientException("cannot create port when client is not opened");
     switch(type)
 	{
-		case(JackPortType::Audio):
+		case(JackPortType::AUDIO):
 		{
 			return new JackAudioOutputPort(this,name);
 		}
@@ -302,7 +308,7 @@ std::vector<JackInputPort*> JackClient::getInputPorts(JackPortType filter,const 
 		{
 			jack_port_t* _port = jack_port_by_name(this->client, portList[portNum]);
 			JackInputPort* inPort;
-			if(filter == JackPortType::Audio)
+			if(filter == JackPortType::AUDIO)
 				inPort = new JackAudioInputPort(this,_port);
 			 else
 				inPort = new JackMIDIInputPort(this,_port);
@@ -323,7 +329,7 @@ std::vector<JackOutputPort*> JackClient::getOutputPorts(JackPortType filter, con
 		{
 			jack_port_t* _port = jack_port_by_name(this->client, portList[portNum]);
 			JackOutputPort* outPort;
-			if(filter == JackPortType::Audio)
+			if(filter == JackPortType::AUDIO)
 				outPort = new JackAudioOutputPort(this,_port);
             else
 				outPort = new JackMIDIOutputPort(this,_port);
@@ -359,6 +365,32 @@ void JackClient::startTransport()
 void JackClient::setTransportPosition(uint32_t position)
 {
     jack_transport_locate(this->client, position);
+}
+
+int JackClient::onTransportSync(Transport::JackTransportState state, Transport::JackPosition* pos)
+{
+    switch(state)
+    {
+        case Transport::JackTransportState::STARTING:
+            return this->onTransportStart(pos);
+            break;
+        case Transport::JackTransportState::STOPPED:
+            return this->onTransportStop(pos);
+            break;
+        case Transport::JackTransportState::ROLLING:
+            return this->onTransportRoll(pos);
+            break;
+        default:
+            break;
+    }
+    return 0;
+};
+
+
+
+Transport::JackTransportState JackClient::getTransportState()
+{
+    return static_cast<Transport::JackTransportState>(jack_transport_query(this->client, NULL));
 }
 
 uint32_t JackClient::getSampleRate()
