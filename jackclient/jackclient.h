@@ -68,6 +68,7 @@ class JackInputPort : public JackPort
 	public:
         void connectTo(JackOutputPort* port);
 		void disconnect(JackOutputPort* port);
+		std::vector<JackOutputPort*> listConnections();
 };
 /**
  *
@@ -83,11 +84,13 @@ class JackOutputPort : public JackPort
 	public:
         void connectTo(JackInputPort* port);
 		void disconnect(JackInputPort* port);
+		std::vector<JackInputPort*> listConnections();
 };
 
 class JackAudioInputPort : public JackInputPort
 {
 	friend class JackClient;
+    friend class JackOutputPort;
 	protected:
 		JackAudioInputPort(JackClient* client, const char* name);
 		JackAudioInputPort(JackClient* client, jack_port_t* port);
@@ -97,6 +100,7 @@ class JackAudioInputPort : public JackInputPort
 class JackAudioOutputPort : public JackOutputPort
 {
 	friend class JackClient;
+    friend class JackInputPort;
 	protected:
 		JackAudioOutputPort(JackClient* client, const char* name);
 		JackAudioOutputPort(JackClient* client, jack_port_t* port);
@@ -121,6 +125,7 @@ class JackMIDIEvent
 class JackMIDIInputPort : public JackInputPort
 {
 	friend class JackClient;
+	friend class JackOutputPort;
 	protected:
 		JackMIDIInputPort(JackClient* client, const char* name);
 		JackMIDIInputPort(JackClient* client, jack_port_t* port);
@@ -132,6 +137,7 @@ class JackMIDIInputPort : public JackInputPort
 class JackMIDIOutputPort : public JackOutputPort
 {
 	friend class JackClient;
+	friend class JackInputPort;
 	protected:
 		JackMIDIOutputPort(JackClient* client, const char* name);
 		JackMIDIOutputPort(JackClient* client, jack_port_t* port);

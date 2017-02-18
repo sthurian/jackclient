@@ -113,6 +113,56 @@ void JackInputPort::disconnect(JackOutputPort* outPort)
 	jack_disconnect(this->client_handle, jack_port_name(outPort->port), jack_port_name(this->port));
 }
 
+std::vector<JackOutputPort*> JackInputPort::listConnections()
+{
+    std::vector<JackOutputPort*> list;
+    const char ** portList =  jack_port_get_all_connections(this->client_handle,this->port);
+    if(portList)
+	{
+		unsigned int portNum = 0;
+		while(portList[portNum])
+		{
+			jack_port_t* _port = jack_port_by_name(this->client_handle, portList[portNum]);
+			std::string type = std::string(jack_port_type(_port));
+			JackOutputPort* outPort;
+			if(type.compare(std::string(JACK_DEFAULT_AUDIO_TYPE)))
+				outPort = new JackAudioOutputPort(this->client,_port);
+            else
+				outPort = new JackMIDIOutputPort(this->client,_port);
+			list.push_back(outPort);
+			portNum++;
+		}
+		jack_free(portList);
+	}
+	return list;
+}
+
+std::vector<JackInputPort*> JackOutputPort::listConnections()
+{
+    std::vector<JackInputPort*> list;
+    const char ** portList =  jack_port_get_all_connections(this->client_handle,this->port);
+    if(portList)
+	{
+		unsigned int portNum = 0;
+		while(portList[portNum])
+		{
+			jack_port_t* _port = jack_port_by_name(this->client_handle, portList[portNum]);
+			std::string type = std::string(jack_port_type(_port));
+			JackInputPort* inPort;
+			if(type.compare(std::string(JACK_DEFAULT_AUDIO_TYPE)))
+				inPort = new JackAudioInputPort(this->client,_port);
+            else
+				inPort = new JackMIDIInputPort(this->client,_port);
+			list.push_back(inPort);
+			portNum++;
+		}
+		jack_free(portList);
+	}
+	return list;
+}
+
+
+
 std::vector<JackMIDIEvent*> JackMIDIInputPort::getMIDIEvents()
 {
 	std::vector<JackMIDIEvent*> events;
