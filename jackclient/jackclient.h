@@ -160,6 +160,7 @@ class JackClient{
 		static int buffer_size_callback(jack_nframes_t nframes, void *arg);
 		static int xrun_callback(void *arg);
 		static int sync_callback(jack_transport_state_t state, jack_position_t *pos, void *arg);
+		static void timebase_callback(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t *pos, int new_pos, void *arg);
 		jack_port_t* createPort(const char* name, JackPortType type = JackPortType::AUDIO, bool isInput=true);
 		const char ** listPorts(JackPortType filter, bool onlyPhysical, bool listInputs);
 		std::vector<JackInputPort*> getInputPorts(JackPortType filter, const char ** ports);
@@ -172,6 +173,7 @@ class JackClient{
 		virtual int onTransportStop(Transport::JackPosition* pos){return 1;};
 		virtual int onTransportRoll(Transport::JackPosition* pos){return 1;};
 		virtual int onTransportSync(Transport::JackTransportState state, Transport::JackPosition* pos);
+		virtual void onTimebase(Transport::JackTransportState state, uint32_t frame, Transport::JackPosition* pos, bool newPos){};
 	public:
 		JackState getState();
 		JackClient(const char* name);
@@ -183,6 +185,8 @@ class JackClient{
 		void stopTransport();
 		void setTransportPosition(uint32_t position);
 		Transport::JackTransportState getTransportState();
+		void enableTimebaseMaster();
+		void disableTimebaseMaster();
 		void deactivate();
 		void startFreewheel();
 		void stopFreewheel();

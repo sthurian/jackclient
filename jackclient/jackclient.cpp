@@ -184,6 +184,12 @@ int JackClient::sync_callback(jack_transport_state_t state, jack_position_t *pos
     return static_cast<JackClient*>(arg)->onTransportSync(static_cast<Transport::JackTransportState>(state),static_cast<Transport::JackPosition*>(pos));
 }
 
+void JackClient::timebase_callback(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t* pos, int new_pos, void* arg)
+{
+    static_cast<JackClient*>(arg)->onTimebase(static_cast<Transport::JackTransportState>(state), nframes, static_cast<Transport::JackPosition*>(pos),new_pos?true:false);
+}
+
+
 void JackClient::open()
 {
 	this->client = jack_client_open (this->name, JackNoStartServer, &this->status, NULL);
@@ -386,6 +392,17 @@ int JackClient::onTransportSync(Transport::JackTransportState state, Transport::
     return 0;
 };
 
+void JackClient::enableTimebaseMaster()
+{
+    if(jack_set_timebase_callback (this->client, 0, &JackClient::timebase_callback, this))
+        throw JackClientException("Could not enable Timebase Master");
+}
+
+void JackClient::disableTimebaseMaster()
+{
+    if(jack_release_timebase(this->client))
+        throw JackClientException("Could not disable Timebase Master");
+}
 
 
 Transport::JackTransportState JackClient::getTransportState()
