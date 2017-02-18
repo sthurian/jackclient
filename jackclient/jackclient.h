@@ -1,6 +1,6 @@
 #ifndef _JACKCLIENT_H
 #define _JACKCLIENT_H
-#include <iostream>
+#include <string>
 #include <vector>
 #include <jack/jack.h>
 #include <jack/midiport.h>
