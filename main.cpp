@@ -11,16 +11,13 @@ class ExampleClient : public JackClient {
     ExampleClient() : JackClient("test") {
         open();
         inPort = (JackAudioInputPort *)this->createInputPort("example_input");
-        outPort =
-            (JackAudioOutputPort *)this->createOutputPort("example_output");
+        outPort = (JackAudioOutputPort *)this->createOutputPort("example_output");
         activate();
-        for (JackInputPort *in :
-             this->listPhysicalInputPorts(JackPortType::AUDIO)) {
+        for (JackInputPort *in : this->listPhysicalInputPorts(JackPortType::AUDIO)) {
             in->connectTo(outPort);
             delete in;
         }
-        for (JackOutputPort *out :
-             this->listPhysicalOutputPorts(JackPortType::AUDIO)) {
+        for (JackOutputPort *out : this->listPhysicalOutputPorts(JackPortType::AUDIO)) {
             out->connectTo(inPort);
             delete out;
         }
