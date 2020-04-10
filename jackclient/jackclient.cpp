@@ -1,432 +1,383 @@
 #include "jackclient.h"
 jack_nframes_t JackClient::nframes = 0;
 
-JackPort::JackPort(JackClient* client, jack_port_t* port, JackPortType type):client(client),portType(type){
-	this->client_handle = client->client;
-	this->port = port;
+JackPort::JackPort(JackClient* client, jack_port_t* port, JackPortType type)
+    : client(client), portType(type) {
+    this->client_handle = client->client;
+    this->port = port;
 };
-JackInputPort::JackInputPort(JackClient* client, jack_port_t* port, JackPortType type):JackPort(client,port,type){};
-JackOutputPort::JackOutputPort(JackClient* client, jack_port_t* port, JackPortType type):JackPort(client,port,type){};
-JackAudioInputPort::JackAudioInputPort(JackClient* client, jack_port_t* port):JackInputPort(client,port,JackPortType::AUDIO){};
-JackAudioOutputPort::JackAudioOutputPort(JackClient* client, jack_port_t* port):JackOutputPort(client,port,JackPortType::AUDIO){};
-JackMIDIInputPort::JackMIDIInputPort(JackClient* client, jack_port_t* port):JackInputPort(client,port,JackPortType::MIDI){};
-JackMIDIOutputPort::JackMIDIOutputPort(JackClient* client, jack_port_t* port):JackOutputPort(client,port,JackPortType::MIDI){};
 
-JackPort::JackPort(JackClient* client, const char* name, JackPortType type):client(client),portType(type){
-	this->client_handle = client->client;
+JackInputPort::JackInputPort(JackClient* client, jack_port_t* port, JackPortType type)
+    : JackPort(client, port, type){};
+JackOutputPort::JackOutputPort(JackClient* client, jack_port_t* port, JackPortType type)
+    : JackPort(client, port, type){};
+JackAudioInputPort::JackAudioInputPort(JackClient* client, jack_port_t* port)
+    : JackInputPort(client, port, JackPortType::AUDIO){};
+JackAudioOutputPort::JackAudioOutputPort(JackClient* client, jack_port_t* port)
+    : JackOutputPort(client, port, JackPortType::AUDIO){};
+JackMIDIInputPort::JackMIDIInputPort(JackClient* client, jack_port_t* port)
+    : JackInputPort(client, port, JackPortType::MIDI){};
+JackMIDIOutputPort::JackMIDIOutputPort(JackClient* client, jack_port_t* port)
+    : JackOutputPort(client, port, JackPortType::MIDI){};
+
+JackPort::JackPort(JackClient* client, const char* name, JackPortType type)
+    : client(client), portType(type) {
+    this->client_handle = client->client;
 };
+
 JackPort::~JackPort(){};
-JackInputPort::JackInputPort(JackClient* client, const char* name, JackPortType type):JackPort(client,name,type){
-	if(type == JackPortType::AUDIO)
-		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
-	else if(type == JackPortType::MIDI)
-		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
+
+JackInputPort::JackInputPort(JackClient* client, const char* name, JackPortType type)
+    : JackPort(client, name, type) {
+    if (type == JackPortType::AUDIO)
+        this->port = jack_port_register(this->client_handle, name, JACK_DEFAULT_AUDIO_TYPE,
+                                        JackPortIsInput, 0);
+    else if (type == JackPortType::MIDI)
+        this->port = jack_port_register(this->client_handle, name, JACK_DEFAULT_MIDI_TYPE,
+                                        JackPortIsInput, 0);
 };
-JackOutputPort::JackOutputPort(JackClient* client, const char* name, JackPortType type):JackPort(client,name,type){
-	if(type == JackPortType::AUDIO)
-		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-	else if(type == JackPortType::MIDI)
-		this->port =  jack_port_register (this->client_handle, name, JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
+
+JackOutputPort::JackOutputPort(JackClient* client, const char* name, JackPortType type)
+    : JackPort(client, name, type) {
+    if (type == JackPortType::AUDIO)
+        this->port = jack_port_register(this->client_handle, name, JACK_DEFAULT_AUDIO_TYPE,
+                                        JackPortIsOutput, 0);
+    else if (type == JackPortType::MIDI)
+        this->port = jack_port_register(this->client_handle, name, JACK_DEFAULT_MIDI_TYPE,
+                                        JackPortIsOutput, 0);
 };
-JackAudioInputPort::JackAudioInputPort(JackClient* client, const char* name):JackInputPort(client,name,JackPortType::AUDIO){};
-JackAudioOutputPort::JackAudioOutputPort(JackClient* client, const char* name):JackOutputPort(client,name,JackPortType::AUDIO){};
-JackMIDIInputPort::JackMIDIInputPort(JackClient* client, const char* name):JackInputPort(client,name,JackPortType::MIDI){};
-JackMIDIOutputPort::JackMIDIOutputPort(JackClient* client, const char* name):JackOutputPort(client,name,JackPortType::MIDI){};
-JackMIDIEvent::JackMIDIEvent(uint32_t time, size_t size, unsigned char* buffer):time(time),size(size),buffer(buffer){};
-uint32_t JackMIDIEvent::getTime(){return this->time;};
-size_t JackMIDIEvent::getSize(){return this->size;};
-unsigned char* JackMIDIEvent::getMIDIData(){return this->buffer;};
 
-void* JackPort::getBufferInternal()
-{
-	return jack_port_get_buffer (this->port, JackClient::nframes);
+JackAudioInputPort::JackAudioInputPort(JackClient* client, const char* name)
+    : JackInputPort(client, name, JackPortType::AUDIO){};
+JackAudioOutputPort::JackAudioOutputPort(JackClient* client, const char* name)
+    : JackOutputPort(client, name, JackPortType::AUDIO){};
+
+JackMIDIInputPort::JackMIDIInputPort(JackClient* client, const char* name)
+    : JackInputPort(client, name, JackPortType::MIDI){};
+JackMIDIOutputPort::JackMIDIOutputPort(JackClient* client, const char* name)
+    : JackOutputPort(client, name, JackPortType::MIDI){};
+
+JackMIDIEvent::JackMIDIEvent(uint32_t time, size_t size, unsigned char* buffer)
+    : time(time), size(size), buffer(buffer){};
+
+uint32_t JackMIDIEvent::getTime() { return this->time; };
+size_t JackMIDIEvent::getSize() { return this->size; };
+
+unsigned char* JackMIDIEvent::getMIDIData() { return this->buffer; };
+
+void* JackPort::getBufferInternal() {
+    return jack_port_get_buffer(this->port, JackClient::nframes);
 }
 
-std::string JackPort::getName()
-{
-	return std::string(jack_port_name(this->port));
+std::string JackPort::getName() { return std::string(jack_port_name(this->port)); }
+std::string JackPort::getShortName() { return std::string(jack_port_short_name(this->port)); }
+
+bool JackPort::isPhysical() {
+    return ((jack_port_flags(this->port) & JackPortIsPhysical) == JackPortIsPhysical);
 }
 
-std::string JackPort::getShortName()
-{
-	return std::string(jack_port_short_name(this->port));
+bool JackPort::isMine() {
+    return jack_port_is_mine(this->client_handle, this->port) ? true : false;
 }
 
-bool JackPort::isPhysical()
-{
-	return ((jack_port_flags(this->port) & JackPortIsPhysical) == JackPortIsPhysical);
-}
+JackPortType JackPort::getPortType() { return this->portType; }
 
-bool JackPort::isMine()
-{
-	return jack_port_is_mine(this->client_handle, this->port)?true:false;
-}
+void JackPort::disconnectAll() { jack_port_disconnect(this->client_handle, this->port); }
 
-JackPortType JackPort::getPortType()
-{
-	return this->portType;
-}
+float* JackAudioInputPort::getBuffer() { return (float*)getBufferInternal(); }
 
-void JackPort::disconnectAll()
-{
-    jack_port_disconnect(this->client_handle,this->port);
-}
+float* JackAudioOutputPort::getBuffer() { return (float*)getBufferInternal(); }
 
-float* JackAudioInputPort::getBuffer()
-{
-	return (float*)getBufferInternal();
-}
-
-float* JackAudioOutputPort::getBuffer()
-{
-	return (float*)getBufferInternal();
-}
-
-void JackOutputPort::connectTo(JackInputPort* inPort)
-{
-    if(this->getPortType() != inPort->getPortType())
+void JackOutputPort::connectTo(JackInputPort* inPort) {
+    if (this->getPortType() != inPort->getPortType())
         throw JackClientException("Cannot connect ports with different types");
-	if(this->client->getState() != JackState::ACTIVE)
-		throw JackClientException("Cannot connect ports when client is not active");
-	int err = jack_connect(this->client_handle, jack_port_name(this->port),jack_port_name(inPort->port));
-	if(err != 0 && err != EEXIST)
-		throw JackClientException("Connecting port failed");
+    if (this->client->getState() != JackState::ACTIVE)
+        throw JackClientException("Cannot connect ports when client is not active");
+    int err =
+        jack_connect(this->client_handle, jack_port_name(this->port), jack_port_name(inPort->port));
+    if (err != 0 && err != EEXIST) throw JackClientException("Connecting port failed");
 }
 
-void JackOutputPort::disconnect(JackInputPort* inPort)
-{
-	jack_disconnect(this->client_handle, jack_port_name(this->port),jack_port_name(inPort->port));
+void JackOutputPort::disconnect(JackInputPort* inPort) {
+    jack_disconnect(this->client_handle, jack_port_name(this->port), jack_port_name(inPort->port));
 }
-void JackInputPort::connectTo(JackOutputPort* outPort)
-{
-    if(this->getPortType() != outPort->getPortType())
+
+void JackInputPort::connectTo(JackOutputPort* outPort) {
+    if (this->getPortType() != outPort->getPortType())
         throw JackClientException("Cannot connect ports with different types");
-	if(this->client->getState() != JackState::ACTIVE)
-		throw JackClientException("Cannot connect ports when client is not active");
-	int err = jack_connect(this->client_handle, jack_port_name(outPort->port), jack_port_name(this->port));
-	if(err != 0 && err != EEXIST)
-		throw JackClientException("Connecting port failed");
+    if (this->client->getState() != JackState::ACTIVE)
+        throw JackClientException("Cannot connect ports when client is not active");
+    int err = jack_connect(this->client_handle, jack_port_name(outPort->port),
+                           jack_port_name(this->port));
+    if (err != 0 && err != EEXIST) throw JackClientException("Connecting port failed");
 }
 
-void JackInputPort::disconnect(JackOutputPort* outPort)
-{
-	jack_disconnect(this->client_handle, jack_port_name(outPort->port), jack_port_name(this->port));
+void JackInputPort::disconnect(JackOutputPort* outPort) {
+    jack_disconnect(this->client_handle, jack_port_name(outPort->port), jack_port_name(this->port));
 }
 
-std::vector<JackOutputPort*> JackInputPort::listConnections()
-{
+std::vector<JackOutputPort*> JackInputPort::listConnections() {
     std::vector<JackOutputPort*> list;
-    const char ** portList =  jack_port_get_all_connections(this->client_handle,this->port);
-    if(portList)
-	{
-		unsigned int portNum = 0;
-		while(portList[portNum])
-		{
-			jack_port_t* _port = jack_port_by_name(this->client_handle, portList[portNum]);
-			std::string type = std::string(jack_port_type(_port));
-			JackOutputPort* outPort;
-			if(type.compare(std::string(JACK_DEFAULT_AUDIO_TYPE)))
-				outPort = new JackAudioOutputPort(this->client,_port);
+    const char** portList = jack_port_get_all_connections(this->client_handle, this->port);
+    if (portList) {
+        unsigned int portNum = 0;
+        while (portList[portNum]) {
+            jack_port_t* _port = jack_port_by_name(this->client_handle, portList[portNum]);
+            std::string type = std::string(jack_port_type(_port));
+            JackOutputPort* outPort;
+            if (type.compare(std::string(JACK_DEFAULT_AUDIO_TYPE)))
+                outPort = new JackAudioOutputPort(this->client, _port);
             else
-				outPort = new JackMIDIOutputPort(this->client,_port);
-			list.push_back(outPort);
-			portNum++;
-		}
-		jack_free(portList);
-	}
-	return list;
+                outPort = new JackMIDIOutputPort(this->client, _port);
+            list.push_back(outPort);
+            portNum++;
+        }
+        jack_free(portList);
+    }
+    return list;
 }
 
-std::vector<JackInputPort*> JackOutputPort::listConnections()
-{
+std::vector<JackInputPort*> JackOutputPort::listConnections() {
     std::vector<JackInputPort*> list;
-    const char ** portList =  jack_port_get_all_connections(this->client_handle,this->port);
-    if(portList)
-	{
-		unsigned int portNum = 0;
-		while(portList[portNum])
-		{
-			jack_port_t* _port = jack_port_by_name(this->client_handle, portList[portNum]);
-			std::string type = std::string(jack_port_type(_port));
-			JackInputPort* inPort;
-			if(type.compare(std::string(JACK_DEFAULT_AUDIO_TYPE)))
-				inPort = new JackAudioInputPort(this->client,_port);
+    const char** portList = jack_port_get_all_connections(this->client_handle, this->port);
+    if (portList) {
+        unsigned int portNum = 0;
+        while (portList[portNum]) {
+            jack_port_t* _port = jack_port_by_name(this->client_handle, portList[portNum]);
+            std::string type = std::string(jack_port_type(_port));
+            JackInputPort* inPort;
+            if (type.compare(std::string(JACK_DEFAULT_AUDIO_TYPE)))
+                inPort = new JackAudioInputPort(this->client, _port);
             else
-				inPort = new JackMIDIInputPort(this->client,_port);
-			list.push_back(inPort);
-			portNum++;
-		}
-		jack_free(portList);
-	}
-	return list;
+                inPort = new JackMIDIInputPort(this->client, _port);
+            list.push_back(inPort);
+            portNum++;
+        }
+        jack_free(portList);
+    }
+    return list;
 }
 
+std::vector<JackMIDIEvent*> JackMIDIInputPort::getMIDIEvents() {
+    std::vector<JackMIDIEvent*> events;
+    void* internalBuf = this->getBufferInternal();
+    uint32_t count = jack_midi_get_event_count(internalBuf);
 
-
-std::vector<JackMIDIEvent*> JackMIDIInputPort::getMIDIEvents()
-{
-	std::vector<JackMIDIEvent*> events;
-	void* internalBuf = this->getBufferInternal();
-	uint32_t count = jack_midi_get_event_count(internalBuf);
-
-	for(uint32_t i=0;i<count; i++)
-	{
-		jack_midi_event_t ev;
-		if(!jack_midi_event_get(&ev,this->getBufferInternal(),i))
-		{
-			events.push_back(new JackMIDIEvent(ev.time,ev.size,ev.buffer));
-		}
-	}
-	return events;
-}
-void JackMIDIOutputPort::clearBuffer()
-{
-	 jack_midi_clear_buffer(getBufferInternal());
-}
-void JackMIDIOutputPort::writeEvent(JackMIDIEvent& event)
-{
-	this->write(event.getTime(),event.getMIDIData(),event.getSize());
+    for (uint32_t i = 0; i < count; i++) {
+        jack_midi_event_t ev;
+        if (!jack_midi_event_get(&ev, this->getBufferInternal(), i)) {
+            events.push_back(new JackMIDIEvent(ev.time, ev.size, ev.buffer));
+        }
+    }
+    return events;
 }
 
-void JackMIDIOutputPort::write(uint32_t time, unsigned char* buffer, size_t size)
-{
-	//Exception ? Return ErrorCode ? Do Nothing if it fails ?
-	jack_midi_event_write(getBufferInternal(),time,buffer,size);
+void JackMIDIOutputPort::clearBuffer() { jack_midi_clear_buffer(getBufferInternal()); }
+
+void JackMIDIOutputPort::writeEvent(JackMIDIEvent& event) {
+    this->write(event.getTime(), event.getMIDIData(), event.getSize());
 }
 
-JackMIDIInputPort::~JackMIDIInputPort()
-{
-
+void JackMIDIOutputPort::write(uint32_t time, unsigned char* buffer, size_t size) {
+    // Exception ? Return ErrorCode ? Do Nothing if it fails?
+    jack_midi_event_write(getBufferInternal(), time, buffer, size);
 }
 
-JackClient::JackClient(const char* name): name(name){}
-JackClient::~JackClient()
-{}
-JackState JackClient::getState()
-{
-	return jackState;
-}
-int JackClient::process(jack_nframes_t nframes, void *arg)
-{
+JackMIDIInputPort::~JackMIDIInputPort() {}
+
+JackClient::JackClient(const char* name) : name(name) {}
+JackClient::~JackClient() {}
+
+JackState JackClient::getState() { return jackState; }
+
+int JackClient::process(jack_nframes_t nframes, void* arg) {
     JackClient* cl = static_cast<JackClient*>(arg);
     return cl->onProcess(nframes);
 }
 
-void JackClient::jack_shutdown(void * arg){
+void JackClient::jack_shutdown(void* arg) {
     static_cast<JackClient*>(arg)->jackState = JackState::CLOSED;
-	return static_cast<JackClient*>(arg)->onShutdown();
+    return static_cast<JackClient*>(arg)->onShutdown();
 };
 
-int JackClient::buffer_size_callback(jack_nframes_t nframes, void *arg)
-{
-	JackClient::nframes = nframes;
-	return 0;
+int JackClient::buffer_size_callback(jack_nframes_t nframes, void* arg) {
+    JackClient::nframes = nframes;
+    return 0;
 }
 
-int JackClient::xrun_callback (void *arg)
-{
+int JackClient::xrun_callback(void* arg) {
     static_cast<JackClient*>(arg)->onXRun();
     return 0;
 }
 
-int JackClient::sync_callback(jack_transport_state_t state, jack_position_t *pos, void *arg)
-{
-    return static_cast<JackClient*>(arg)->onTransportSync(static_cast<Transport::JackTransportState>(state),static_cast<Transport::JackPosition*>(pos));
+int JackClient::sync_callback(jack_transport_state_t state, jack_position_t* pos, void* arg) {
+    return static_cast<JackClient*>(arg)->onTransportSync(
+        static_cast<Transport::JackTransportState>(state),
+        static_cast<Transport::JackPosition*>(pos));
 }
 
-void JackClient::timebase_callback(jack_transport_state_t state, jack_nframes_t nframes, jack_position_t* pos, int new_pos, void* arg)
-{
-    static_cast<JackClient*>(arg)->onTimebase(static_cast<Transport::JackTransportState>(state), nframes, static_cast<Transport::JackPosition*>(pos),new_pos?true:false);
+void JackClient::timebase_callback(jack_transport_state_t state, jack_nframes_t nframes,
+                                   jack_position_t* pos, int new_pos, void* arg) {
+    static_cast<JackClient*>(arg)->onTimebase(static_cast<Transport::JackTransportState>(state),
+                                              nframes, static_cast<Transport::JackPosition*>(pos),
+                                              new_pos ? true : false);
 }
 
-
-void JackClient::open()
-{
-	this->client = jack_client_open (this->name, JackNoStartServer, &this->status, NULL);
+void JackClient::open() {
+    this->client = jack_client_open(this->name, JackNoStartServer, &this->status, NULL);
     if (this->client == NULL) {
-      if (this->status & JackServerFailed) {
-	throw JackClientException("Unable to connect to JACK server");
-      }
-      return;
+        if (this->status & JackServerFailed) {
+            throw JackClientException("Unable to connect to JACK server");
+        }
+        return;
     }
-  if (this->status & JackNameNotUnique)
-	  this->name = jack_get_client_name(client);
-  jack_set_process_callback (this->client, &JackClient::process, this);
-  jack_on_shutdown (this->client, &JackClient::jack_shutdown, this);
-  jack_set_buffer_size_callback	(this->client,&JackClient::buffer_size_callback,this);
-  jack_set_xrun_callback (this->client, &JackClient::xrun_callback, this);
-  jack_set_sync_callback(this->client, &JackClient::sync_callback,this);
-  jackState = JackState::INACTIVE;
+    if (this->status & JackNameNotUnique) this->name = jack_get_client_name(client);
+    jack_set_process_callback(this->client, &JackClient::process, this);
+    jack_on_shutdown(this->client, &JackClient::jack_shutdown, this);
+    jack_set_buffer_size_callback(this->client, &JackClient::buffer_size_callback, this);
+    jack_set_xrun_callback(this->client, &JackClient::xrun_callback, this);
+    jack_set_sync_callback(this->client, &JackClient::sync_callback, this);
+    jackState = JackState::INACTIVE;
 };
-void JackClient::close()
-{
-    if(jackState != JackState::CLOSED)
-    {
-        if(this->client != NULL)
-            jack_client_close(this->client) ;
+
+void JackClient::close() {
+    if (jackState != JackState::CLOSED) {
+        if (this->client != NULL) jack_client_close(this->client);
         jackState = JackState::CLOSED;
     }
 };
-void JackClient::activate()
-{
-	if (( jackState == JackState::INACTIVE ) && this->client != NULL && jack_activate (this->client)) {
-      throw JackClientException("cannot activate client");
-  }
-  jackState = JackState::ACTIVE;
-};
-void JackClient::deactivate()
-{
-    if(jackState == JackState::ACTIVE)
-        jack_deactivate (client);
-	jackState = JackState::INACTIVE;
+
+void JackClient::activate() {
+    if ((jackState == JackState::INACTIVE) && this->client != NULL && jack_activate(this->client)) {
+        throw JackClientException("cannot activate client");
+    }
+    jackState = JackState::ACTIVE;
 };
 
-JackInputPort* JackClient::createInputPort(const char* name, JackPortType type)
-{
-    if(jackState == JackState::CLOSED)
+void JackClient::deactivate() {
+    if (jackState == JackState::ACTIVE) jack_deactivate(client);
+    jackState = JackState::INACTIVE;
+};
+
+JackInputPort* JackClient::createInputPort(const char* name, JackPortType type) {
+    if (jackState == JackState::CLOSED)
         throw JackClientException("cannot create port when client is not opened");
-	switch(type)
-	{
-		case(JackPortType::AUDIO):
-		{
-			return new JackAudioInputPort(this,name);
-		}
-		case(JackPortType::MIDI):
-		{
-			return new JackMIDIInputPort(this,name);
-		}
-	}
-	throw JackClientException("Hu! This should never happen. JackPortType is unknown");
+    switch (type) {
+        case (JackPortType::AUDIO): {
+            return new JackAudioInputPort(this, name);
+        }
+        case (JackPortType::MIDI): {
+            return new JackMIDIInputPort(this, name);
+        }
+    }
+    throw JackClientException("Hu! This should never happen. JackPortType is unknown");
 }
-JackOutputPort* JackClient::createOutputPort(const char* name, JackPortType type)
-{
-    if(jackState == JackState::CLOSED)
+
+JackOutputPort* JackClient::createOutputPort(const char* name, JackPortType type) {
+    if (jackState == JackState::CLOSED)
         throw JackClientException("cannot create port when client is not opened");
-    switch(type)
-	{
-		case(JackPortType::AUDIO):
-		{
-			return new JackAudioOutputPort(this,name);
-		}
-		case(JackPortType::MIDI):
-		{
-			return new JackMIDIOutputPort(this,name);
-		}
-	}
-	throw JackClientException("Hu! This should never happen. JackPortType is unknown");
+    switch (type) {
+        case (JackPortType::AUDIO): {
+            return new JackAudioOutputPort(this, name);
+        }
+        case (JackPortType::MIDI): {
+            return new JackMIDIOutputPort(this, name);
+        }
+    }
+    throw JackClientException("Hu! This should never happen. JackPortType is unknown");
 }
 
-void JackClient::startFreewheel()
-{
-	if( jack_set_freewheel(this->client, 1) )
-		throw JackClientException("Error starting freewheel-mode");
+void JackClient::startFreewheel() {
+    if (jack_set_freewheel(this->client, 1))
+        throw JackClientException("Error starting freewheel-mode");
 }
 
-void JackClient::stopFreewheel()
-{
-	if( jack_set_freewheel(this->client, 0) )
-		throw JackClientException("Error stopping freewheel-mode");
+void JackClient::stopFreewheel() {
+    if (jack_set_freewheel(this->client, 0))
+        throw JackClientException("Error stopping freewheel-mode");
 }
 
-const char ** JackClient::listPorts(JackPortType filter, bool onlyPhysical, bool listInputs)
-{
-	long _filter = onlyPhysical?JackPortIsPhysical:0;
-	if(listInputs)
-		_filter|=JackPortIsInput;
-	else
-		_filter|=JackPortIsOutput;
-	if(filter == JackPortType::MIDI)
-		return jack_get_ports (this->client, NULL, JACK_DEFAULT_MIDI_TYPE, _filter);
-	else
-		return jack_get_ports (this->client, NULL, JACK_DEFAULT_AUDIO_TYPE, _filter);
+const char** JackClient::listPorts(JackPortType filter, bool onlyPhysical, bool listInputs) {
+    long _filter = onlyPhysical ? JackPortIsPhysical : 0;
+    if (listInputs)
+        _filter |= JackPortIsInput;
+    else
+        _filter |= JackPortIsOutput;
+    if (filter == JackPortType::MIDI)
+        return jack_get_ports(this->client, NULL, JACK_DEFAULT_MIDI_TYPE, _filter);
+    else
+        return jack_get_ports(this->client, NULL, JACK_DEFAULT_AUDIO_TYPE, _filter);
 }
 
-
-std::vector<JackInputPort*> JackClient::listPhysicalInputPorts(JackPortType filter)
-{
-	const char ** portList = this->listPorts(filter, true, true);
-	return getInputPorts(filter,portList);
+std::vector<JackInputPort*> JackClient::listPhysicalInputPorts(JackPortType filter) {
+    const char** portList = this->listPorts(filter, true, true);
+    return getInputPorts(filter, portList);
 }
 
-std::vector<JackInputPort*> JackClient::listInputPorts(JackPortType filter)
-{
-	const char ** portList = this->listPorts(filter, false, true);
-	return getInputPorts(filter,portList);
+std::vector<JackInputPort*> JackClient::listInputPorts(JackPortType filter) {
+    const char** portList = this->listPorts(filter, false, true);
+    return getInputPorts(filter, portList);
 }
 
-std::vector<JackInputPort*> JackClient::getInputPorts(JackPortType filter,const char ** portList)
-{
+std::vector<JackInputPort*> JackClient::getInputPorts(JackPortType filter, const char** portList) {
     std::vector<JackInputPort*> list;
-    if(portList)
-	{
-		unsigned int portNum = 0;
-		while(portList[portNum])
-		{
-			jack_port_t* _port = jack_port_by_name(this->client, portList[portNum]);
-			JackInputPort* inPort;
-			if(filter == JackPortType::AUDIO)
-				inPort = new JackAudioInputPort(this,_port);
-			 else
-				inPort = new JackMIDIInputPort(this,_port);
-			list.push_back(inPort);
-			portNum++;
-		}
-		jack_free(portList);
-	}
-	return list;
-};
-std::vector<JackOutputPort*> JackClient::getOutputPorts(JackPortType filter, const char ** portList)
-{
-    std::vector<JackOutputPort*> list;
-    if(portList)
-	{
-		unsigned int portNum = 0;
-		while(portList[portNum])
-		{
-			jack_port_t* _port = jack_port_by_name(this->client, portList[portNum]);
-			JackOutputPort* outPort;
-			if(filter == JackPortType::AUDIO)
-				outPort = new JackAudioOutputPort(this,_port);
+    if (portList) {
+        unsigned int portNum = 0;
+        while (portList[portNum]) {
+            jack_port_t* _port = jack_port_by_name(this->client, portList[portNum]);
+            JackInputPort* inPort;
+            if (filter == JackPortType::AUDIO)
+                inPort = new JackAudioInputPort(this, _port);
             else
-				outPort = new JackMIDIOutputPort(this,_port);
-			list.push_back(outPort);
-			portNum++;
-		}
-		jack_free(portList);
-	}
-	return list;
+                inPort = new JackMIDIInputPort(this, _port);
+            list.push_back(inPort);
+            portNum++;
+        }
+        jack_free(portList);
+    }
+    return list;
 };
 
-std::vector<JackOutputPort*> JackClient::listPhysicalOutputPorts(JackPortType filter)
-{
-	const char ** portList = this->listPorts(filter, true, false);
-	return getOutputPorts(filter,portList);
+std::vector<JackOutputPort*> JackClient::getOutputPorts(JackPortType filter,
+                                                        const char** portList) {
+    std::vector<JackOutputPort*> list;
+    if (portList) {
+        unsigned int portNum = 0;
+        while (portList[portNum]) {
+            jack_port_t* _port = jack_port_by_name(this->client, portList[portNum]);
+            JackOutputPort* outPort;
+            if (filter == JackPortType::AUDIO)
+                outPort = new JackAudioOutputPort(this, _port);
+            else
+                outPort = new JackMIDIOutputPort(this, _port);
+            list.push_back(outPort);
+            portNum++;
+        }
+        jack_free(portList);
+    }
+    return list;
+};
+
+std::vector<JackOutputPort*> JackClient::listPhysicalOutputPorts(JackPortType filter) {
+    const char** portList = this->listPorts(filter, true, false);
+    return getOutputPorts(filter, portList);
 }
 
-std::vector<JackOutputPort*> JackClient::listOutputPorts(JackPortType filter)
-{
-	const char ** portList = this->listPorts(filter, false, false);
-	return getOutputPorts(filter,portList);
+std::vector<JackOutputPort*> JackClient::listOutputPorts(JackPortType filter) {
+    const char** portList = this->listPorts(filter, false, false);
+    return getOutputPorts(filter, portList);
 }
 
-void JackClient::stopTransport(){
-    jack_transport_stop(this->client);
-}
+void JackClient::stopTransport() { jack_transport_stop(this->client); }
 
-void JackClient::startTransport()
-{
-    jack_transport_start(this->client);
-}
+void JackClient::startTransport() { jack_transport_start(this->client); }
 
-void JackClient::setTransportPosition(uint32_t position)
-{
+void JackClient::setTransportPosition(uint32_t position) {
     jack_transport_locate(this->client, position);
 }
 
-int JackClient::onTransportSync(Transport::JackTransportState state, Transport::JackPosition* pos)
-{
-    switch(state)
-    {
+int JackClient::onTransportSync(Transport::JackTransportState state, Transport::JackPosition* pos) {
+    switch (state) {
         case Transport::JackTransportState::STARTING:
             return this->onTransportStart(pos);
             break;
@@ -442,25 +393,18 @@ int JackClient::onTransportSync(Transport::JackTransportState state, Transport::
     return 0;
 };
 
-void JackClient::enableTimebaseMaster()
-{
-    if(jack_set_timebase_callback (this->client, 0, &JackClient::timebase_callback, this))
+void JackClient::enableTimebaseMaster() {
+    if (jack_set_timebase_callback(this->client, 0, &JackClient::timebase_callback, this))
         throw JackClientException("Could not enable Timebase Master");
 }
 
-void JackClient::disableTimebaseMaster()
-{
-    if(jack_release_timebase(this->client))
+void JackClient::disableTimebaseMaster() {
+    if (jack_release_timebase(this->client))
         throw JackClientException("Could not disable Timebase Master");
 }
 
-
-Transport::JackTransportState JackClient::getTransportState()
-{
+Transport::JackTransportState JackClient::getTransportState() {
     return static_cast<Transport::JackTransportState>(jack_transport_query(this->client, NULL));
 }
 
-uint32_t JackClient::getSampleRate()
-{
-	return jack_get_sample_rate(this->client);
-}
+uint32_t JackClient::getSampleRate() { return jack_get_sample_rate(this->client); }
