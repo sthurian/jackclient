@@ -39,7 +39,6 @@ class JackClientException : public std::exception {
  *
  * */
 class JackPort {
-   private:
    protected:
     JackClient* client;
     JackPortType portType;
@@ -49,6 +48,8 @@ class JackPort {
     JackPort(JackClient* client, const char* name, JackPortType type);
     JackPort(JackClient* client, jack_port_t* port, JackPortType type);
     void* getBufferInternal();
+    template <typename T>
+    std::vector<std::unique_ptr<T>> listConnections();
 
    public:
     ~JackPort();
@@ -75,7 +76,6 @@ class JackInputPort : public JackPort {
    public:
     void connectTo(JackOutputPort& port);
     void disconnect(JackOutputPort& port);
-    std::vector<JackOutputPort*> listConnections();
 };
 /**
  *
@@ -92,23 +92,25 @@ class JackOutputPort : public JackPort {
    public:
     void connectTo(JackInputPort& port);
     void disconnect(JackInputPort& port);
-    std::vector<JackInputPort*> listConnections();
 };
 
+class JackAudioOutputPort;
 class JackAudioInputPort : public JackInputPort {
-    friend class JackOutputPort;
+    friend class JackAudioOutputPort;
 
    public:
     JackAudioInputPort(JackClient* client, const char* name);
     JackAudioInputPort(JackClient* client, jack_port_t* port);
+    std::vector<std::unique_ptr<JackAudioOutputPort>> getConnections();
     float* getBuffer();
 };
 class JackAudioOutputPort : public JackOutputPort {
-    friend class JackInputPort;
+    friend class JackAudioInputPort;
 
    public:
     JackAudioOutputPort(JackClient* client, const char* name);
     JackAudioOutputPort(JackClient* client, jack_port_t* port);
+    std::vector<std::unique_ptr<JackAudioInputPort>> getConnections();
     float* getBuffer();
 };
 
@@ -131,7 +133,7 @@ class JackMIDIInputPort : public JackInputPort {
    public:
     JackMIDIInputPort(JackClient* client, const char* name);
     JackMIDIInputPort(JackClient* client, jack_port_t* port);
-    std::vector<JackMIDIEvent*> getMIDIEvents();
+    std::vector<std::unique_ptr<JackMIDIEvent>> getMIDIEvents();
     ~JackMIDIInputPort();
 };
 
@@ -168,11 +170,8 @@ class JackClient {
     static int sync_callback(jack_transport_state_t state, jack_position_t* pos, void* arg);
     static void timebase_callback(jack_transport_state_t state, jack_nframes_t nframes,
                                   jack_position_t* pos, int new_pos, void* arg);
-    jack_port_t* createPort(const char* name, JackPortType type = JackPortType::AUDIO,
-                            bool isInput = true);
-    const char** listPorts(JackPortType filter, bool onlyPhysical, bool listInputs);
-    std::vector<JackInputPort*> getInputPorts(JackPortType filter, const char** ports);
-    std::vector<JackOutputPort*> getOutputPorts(JackPortType filter, const char** ports);
+    template <typename T>
+    std::vector<std::unique_ptr<T>> createPorts(JackPortType type, JackPortFlags flags);
 
    protected:
     virtual int onProcess(uint32_t sampleCount) = 0;
@@ -209,9 +208,9 @@ class JackClient {
     std::unique_ptr<JackMIDIInputPort> createMIDIInputPort(const char* name);
     std::unique_ptr<JackMIDIOutputPort> createMIDIOutputPort(const char* name);
 
-    std::vector<JackInputPort*> listInputPorts(JackPortType filter = JackPortType::AUDIO);
-    std::vector<JackInputPort*> listPhysicalInputPorts(JackPortType filter = JackPortType::AUDIO);
-    std::vector<JackOutputPort*> listOutputPorts(JackPortType filter = JackPortType::AUDIO);
-    std::vector<JackOutputPort*> listPhysicalOutputPorts(JackPortType filter = JackPortType::AUDIO);
+    std::vector<std::unique_ptr<JackAudioInputPort>> getAudioInputPorts();
+    std::vector<std::unique_ptr<JackAudioOutputPort>> getAudioOutputPorts();
+    std::vector<std::unique_ptr<JackMIDIInputPort>> getMIDIInputPorts();
+    std::vector<std::unique_ptr<JackMIDIOutputPort>> getMIDIOutputPorts();
 };
 #endif

@@ -13,13 +13,15 @@ class ExampleClient : public JackClient {
         this->inPort = this->createAudioInputPort("example_input");
         this->outPort = this->createAudioOutputPort("example_output");
         activate();
-        for (JackInputPort *in : this->listPhysicalInputPorts(JackPortType::AUDIO)) {
-            in->connectTo(*outPort);
-            delete in;
+        for (auto &in : this->getAudioInputPorts()) {
+            if (in->isPhysical()) {
+                in->connectTo(*outPort);
+            }
         }
-        for (JackOutputPort *out : this->listPhysicalOutputPorts(JackPortType::AUDIO)) {
-            out->connectTo(*inPort);
-            delete out;
+        for (auto &out : this->getAudioOutputPorts()) {
+            if (out->isPhysical()) {
+                out->connectTo(*inPort);
+            }
         }
     };
     ~ExampleClient() { this->close(); }
