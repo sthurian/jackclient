@@ -4,29 +4,25 @@
 
 class ExampleClient : public JackClient {
    private:
-    JackAudioInputPort *inPort = nullptr;
-    JackAudioOutputPort *outPort = nullptr;
+    std::unique_ptr<JackAudioInputPort> inPort;
+    std::unique_ptr<JackAudioOutputPort> outPort;
 
    public:
     ExampleClient() : JackClient("test") {
         open();
-        inPort = (JackAudioInputPort *)this->createInputPort("example_input");
-        outPort = (JackAudioOutputPort *)this->createOutputPort("example_output");
+        this->inPort = this->createAudioInputPort("example_input");
+        this->outPort = this->createAudioOutputPort("example_output");
         activate();
         for (JackInputPort *in : this->listPhysicalInputPorts(JackPortType::AUDIO)) {
-            in->connectTo(outPort);
+            in->connectTo(*outPort);
             delete in;
         }
         for (JackOutputPort *out : this->listPhysicalOutputPorts(JackPortType::AUDIO)) {
-            out->connectTo(inPort);
+            out->connectTo(*inPort);
             delete out;
         }
     };
-    ~ExampleClient() {
-        delete inPort;
-        delete outPort;
-        this->close();
-    }
+    ~ExampleClient() { this->close(); }
 
    protected:
     int onProcess(uint32_t sampleCount) {

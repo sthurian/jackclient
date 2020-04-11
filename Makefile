@@ -1,5 +1,5 @@
 CC=/usr/bin/g++
-CFLAGS=--std=c++11 -pthread -Os -Wall
+CFLAGS=--std=c++14 -pthread -Os -Wall
 JACKFLAGS=`pkg-config --cflags --libs jack`
 TARGETS=main.cpp jackclient/jackclient.cpp
 all :

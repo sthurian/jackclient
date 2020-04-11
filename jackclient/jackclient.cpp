@@ -88,32 +88,32 @@ float* JackAudioInputPort::getBuffer() { return (float*)getBufferInternal(); }
 
 float* JackAudioOutputPort::getBuffer() { return (float*)getBufferInternal(); }
 
-void JackOutputPort::connectTo(JackInputPort* inPort) {
-    if (this->getPortType() != inPort->getPortType())
+void JackOutputPort::connectTo(JackInputPort& inPort) {
+    if (this->getPortType() != inPort.getPortType())
         throw JackClientException("Cannot connect ports with different types");
     if (this->client->getState() != JackState::ACTIVE)
         throw JackClientException("Cannot connect ports when client is not active");
     int err =
-        jack_connect(this->client_handle, jack_port_name(this->port), jack_port_name(inPort->port));
+        jack_connect(this->client_handle, jack_port_name(this->port), jack_port_name(inPort.port));
     if (err != 0 && err != EEXIST) throw JackClientException("Connecting port failed");
 }
 
-void JackOutputPort::disconnect(JackInputPort* inPort) {
-    jack_disconnect(this->client_handle, jack_port_name(this->port), jack_port_name(inPort->port));
+void JackOutputPort::disconnect(JackInputPort& inPort) {
+    jack_disconnect(this->client_handle, jack_port_name(this->port), jack_port_name(inPort.port));
 }
 
-void JackInputPort::connectTo(JackOutputPort* outPort) {
-    if (this->getPortType() != outPort->getPortType())
+void JackInputPort::connectTo(JackOutputPort& outPort) {
+    if (this->getPortType() != outPort.getPortType())
         throw JackClientException("Cannot connect ports with different types");
     if (this->client->getState() != JackState::ACTIVE)
         throw JackClientException("Cannot connect ports when client is not active");
-    int err = jack_connect(this->client_handle, jack_port_name(outPort->port),
-                           jack_port_name(this->port));
+    int err =
+        jack_connect(this->client_handle, jack_port_name(outPort.port), jack_port_name(this->port));
     if (err != 0 && err != EEXIST) throw JackClientException("Connecting port failed");
 }
 
-void JackInputPort::disconnect(JackOutputPort* outPort) {
-    jack_disconnect(this->client_handle, jack_port_name(outPort->port), jack_port_name(this->port));
+void JackInputPort::disconnect(JackOutputPort& outPort) {
+    jack_disconnect(this->client_handle, jack_port_name(outPort.port), jack_port_name(this->port));
 }
 
 std::vector<JackOutputPort*> JackInputPort::listConnections() {
@@ -259,32 +259,28 @@ void JackClient::deactivate() {
     jackState = JackState::INACTIVE;
 };
 
-JackInputPort* JackClient::createInputPort(const char* name, JackPortType type) {
+std::unique_ptr<JackAudioInputPort> JackClient::createAudioInputPort(const char* name) {
     if (jackState == JackState::CLOSED)
         throw JackClientException("cannot create port when client is not opened");
-    switch (type) {
-        case (JackPortType::AUDIO): {
-            return new JackAudioInputPort(this, name);
-        }
-        case (JackPortType::MIDI): {
-            return new JackMIDIInputPort(this, name);
-        }
-    }
-    throw JackClientException("Hu! This should never happen. JackPortType is unknown");
+    return std::make_unique<JackAudioInputPort>(this, name);
 }
 
-JackOutputPort* JackClient::createOutputPort(const char* name, JackPortType type) {
+std::unique_ptr<JackAudioOutputPort> JackClient::createAudioOutputPort(const char* name) {
     if (jackState == JackState::CLOSED)
         throw JackClientException("cannot create port when client is not opened");
-    switch (type) {
-        case (JackPortType::AUDIO): {
-            return new JackAudioOutputPort(this, name);
-        }
-        case (JackPortType::MIDI): {
-            return new JackMIDIOutputPort(this, name);
-        }
-    }
-    throw JackClientException("Hu! This should never happen. JackPortType is unknown");
+    return std::make_unique<JackAudioOutputPort>(this, name);
+}
+
+std::unique_ptr<JackMIDIInputPort> JackClient::createMIDIInputPort(const char* name) {
+    if (jackState == JackState::CLOSED)
+        throw JackClientException("cannot create port when client is not opened");
+    return std::make_unique<JackMIDIInputPort>(this, name);
+}
+
+std::unique_ptr<JackMIDIOutputPort> JackClient::createMIDIOutputPort(const char* name) {
+    if (jackState == JackState::CLOSED)
+        throw JackClientException("cannot create port when client is not opened");
+    return std::make_unique<JackMIDIOutputPort>(this, name);
 }
 
 void JackClient::startFreewheel() {
